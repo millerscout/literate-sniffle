@@ -1,6 +1,8 @@
 # Literate Sniffle
 
-A simple full-stack TypeScript application with Vue.js frontend and Express backend.
+A full-stack TypeScript application for processing and visualizing custom CNAB (Brazilian banking transaction) files, featuring a Vue.js frontend and Express backend.
+
+**Recommended Setup**: Use Docker Compose for the simplest installation and testing experience.
 
 ## Quick Start
 
@@ -16,6 +18,8 @@ This will start:
 - **Frontend** on port 5173
 
 The database schema will be automatically created and migrations applied.
+
+To test the application, upload the sample CNAB file located at `backend/uploads/CNAB.txt` or download from [this GitHub link](https://github.com/ByCodersTec/desafio-ruby-on-rails/blob/master/CNAB.txt).
 
 ### Manual Setup (Local Development)
 
@@ -170,6 +174,10 @@ literate-sniffle/
 - **Containerization**: Docker & Docker Compose
 - **API Documentation**: Swagger/OpenAPI
 
+## Documentation
+
+See the [docs/adr/](docs/adr/) directory for Architectural Decision Records explaining key design choices.
+
 ## Database Schema
 
 ### Tables
@@ -228,6 +236,17 @@ cd frontend && npm run test:ui
 # Frontend - Coverage report
 cd frontend && npm run test:coverage
 ```
+
+## Disclaimer
+
+This implementation has several known limitations and areas for improvement:
+
+- **File Handling**: Using API endpoints to handle large CNAB files is not ideal. Huge files may cause performance issues or timeouts.
+- **CNAB Verification**: Verification for atomic changes in CNAB processing was not implemented.
+- **Technology Choice**: Node.js was chosen for fast prototyping but is not optimal for memory management in large-scale processing. Consider using a language with better memory efficiency.
+- **Processing Strategy**: Current processing handles files in memory, which is problematic for huge files. Implement chunked and atomic processing using cronjobs or file watchers for better scalability.
+
+These are design considerations and not implemented fixes.
 
 ## License
 

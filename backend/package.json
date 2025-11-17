@@ -8,9 +8,9 @@
     "start": "node dist/index.js",
     "dev": "npm run db:setup && npx tsx watch src/index.ts",
     "db:setup": "npx prisma db push --force-reset",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test": "npx prisma generate && jest",
+    "test:watch": "npx prisma generate && jest --watch",
+    "test:coverage": "npx prisma generate && jest --coverage"
   },
   "keywords": [
     "express",

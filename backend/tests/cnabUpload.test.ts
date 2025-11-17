@@ -118,6 +118,7 @@ describe('CNAB Upload and Database Storage', () => {
       expect(transaction).toHaveProperty('id');
       expect(transaction).toHaveProperty('transactionType');
       expect(transaction).toHaveProperty('transactionCode');
+      expect(transaction).toHaveProperty('description');
       expect(transaction).toHaveProperty('date');
       expect(transaction).toHaveProperty('value');
       expect(transaction).toHaveProperty('cpf');
@@ -126,6 +127,11 @@ describe('CNAB Upload and Database Storage', () => {
       expect(transaction).toHaveProperty('storeName');
       expect(transaction).toHaveProperty('storeOwner');
       expect(transaction).toHaveProperty('fileId');
+
+      // Verify that description is populated and not null
+      expect(transaction.description).toBeDefined();
+      expect(typeof transaction.description).toBe('string');
+      expect(transaction.description.length).toBeGreaterThan(0);
     });
   });
 

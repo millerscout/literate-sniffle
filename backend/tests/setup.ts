@@ -50,13 +50,21 @@ beforeAll(async () => {
   console.log(`DATABASE_URL set to: ${process.env.DATABASE_URL}`);
 
   // Create Prisma client AFTER setting DATABASE_URL
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({
+    log: ['error', 'warn'],
+  });
 
   // Set the test prisma instance for the application code
   setTestPrisma(prisma);
 
   // Connect to the MySQL in-memory database for testing
-  await prisma.$connect();
+  try {
+    await prisma.$connect();
+    console.log('Prisma client connected successfully');
+  } catch (connectError) {
+    console.error('Failed to connect Prisma client:', connectError);
+    throw connectError;
+  }
 
   // Run database migrations for test database
   try {
@@ -79,14 +87,18 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await prisma.$disconnect();
+  // Disconnect Prisma client
+  if (prisma) {
+    console.log('Disconnecting Prisma client...');
+    await prisma.$disconnect();
+  }
 
   // Stop MySQL Memory Server
   if (mysqlServer) {
     console.log('Stopping MySQL Memory Server...');
     await mysqlServer.stop();
   }
-});
+}, 30000);
 
 // Clean up uploaded files after each test
 afterEach(() => {

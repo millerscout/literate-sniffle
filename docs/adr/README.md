@@ -1,69 +1,24 @@
 # Architecture Decision Records
 
-This directory contains Architecture Decision Records (ADRs) for the Literate Sniffle project.
-
-## What are ADRs?
-
-Architecture Decision Records capture important architectural decisions made during the development of the project. Each ADR describes the context, decision, and consequences of a significant choice.
-
-ADRs serve as:
-- **Historical Record**: Documenting why decisions were made
-- **Knowledge Base**: Helping new team members understand architectural choices
-- **Decision Framework**: Providing structure for future architectural discussions
-- **Evolution Guide**: Showing how architecture evolves over time
+ADRs document significant architectural decisions for the Literate Sniffle project.
 
 ## When to Create an ADR
 
-Create an ADR for decisions that have a **significant impact** on the project:
+Create ADRs for decisions with significant impact:
+- Technology stack choices
+- Major architectural patterns
+- Infrastructure decisions
+- Security architecture
+- Performance-critical choices
+- Breaking changes
 
-### Must Create ADR
-- Technology stack choices (languages, frameworks, databases)
-- Major architectural patterns (MVC, microservices, serverless)
-- Infrastructure decisions (cloud providers, deployment strategies)
-- Security architecture decisions
-- Performance-critical design choices
-- Breaking changes to existing architecture
+## Process
 
-### Should Consider ADR
-- New third-party service integrations
-- Significant API design changes
-- Database schema changes affecting multiple systems
-- Testing strategy changes
-- CI/CD pipeline modifications
-
-### Don't Need ADR
-- Routine implementation details
-- Minor library updates
-- Small refactoring without architectural impact
-- Personal development tool preferences
-
-## ADR Process
-
-### 1. Draft Phase
-- Identify the decision that needs to be made
-- Research alternatives and gather requirements
-- Write initial ADR in "Proposed" status
-- Share with team for feedback
-
-### 2. Review Phase
-- Present ADR in team meeting or via PR
-- Discuss alternatives and trade-offs
-- Incorporate feedback and revise
-
-### 3. Approval Phase
-- Get consensus from key stakeholders
-- Update status to "Accepted" or "Rejected"
-- Implement the decision
-
-### 4. Implementation Phase
-- Put decision into practice
-- Monitor outcomes and consequences
-- Update ADR if unexpected issues arise
-
-### 5. Evolution Phase
-- Revisit decisions periodically
-- Create new ADRs for significant changes
-- Update status if decision is superseded
+1. **Draft**: Write ADR with "Proposed" status
+2. **Review**: Share with team for feedback
+3. **Approve**: Update to "Accepted" when consensus reached
+4. **Implement**: Put decision into practice
+5. **Monitor**: Update if unexpected issues arise
 
 ## Format
 
@@ -95,16 +50,16 @@ Each ADR follows this structure:
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [001](001-nodejs-fullstack.md) | Node.js for Full-Stack Development | Accepted | 2025-11-16 |
-| [002](002-ai-assisted-development.md) | AI-Assisted Development and Code Generation | Accepted | 2025-11-16 |
-| [003](003-database-choice.md) | MySQL for Database Service | Accepted | 2025-11-16 |
-| [004](004-transaction-type-lookup-table.md) | Transaction Type Lookup Table for Database Performance | Accepted | 2025-11-16 |
+| [001](001-nodejs-fullstack.md) | Node.js Full-Stack Development | Accepted | 2025-11-16 |
+| [002](002-ai-assisted-development.md) | AI-Assisted Development | Accepted | 2025-11-16 |
+| [003](003-database-choice.md) | MySQL Database Choice | Accepted | 2025-11-16 |
+| [004](004-transaction-description-storage.md) | Transaction Description Storage | Accepted | 2025-11-16 |
 
 ## How to Create a New ADR
 
 ### Step-by-Step Process
 
-1. **Choose ADR Number**: Use next sequential number (003, 004, etc.)
+1. **Choose ADR Number**: Use next sequential number (004, 005, etc.)
 2. **Copy Template**: Use the template below as starting point
 3. **Fill in Details**: Complete all required sections
 4. **Set Initial Status**: Start with "Proposed"
@@ -115,7 +70,7 @@ Each ADR follows this structure:
 9. **Update Index**: Add to this README table
 
 ### File Naming Convention
-- `XXX-descriptive-name.md` (e.g., `003-database-migration-strategy.md`)
+- `XXX-descriptive-name.md` (e.g., `004-database-migration-strategy.md`)
 - Use lowercase, hyphen-separated names
 - Keep names descriptive but concise
 

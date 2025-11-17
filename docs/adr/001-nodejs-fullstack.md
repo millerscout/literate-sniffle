@@ -1,4 +1,4 @@
-# ADR 001: Node.js for Full-Stack Development
+# ADR 001: Node.js Full-Stack Development
 
 ## Status
 Accepted
@@ -7,39 +7,27 @@ Accepted
 2025-11-16
 
 ## Context
-Need unified technology stack for rapid full-stack web development with consistent tooling.
+Need unified technology stack for rapid full-stack development.
 
 ## Decision
 Use Node.js ecosystem:
-- **Frontend**: Vue.js 3 + TypeScript + Vite
-- **Backend**: Express.js + TypeScript + Node.js
-- **Database**: MySQL (current) → PostgreSQL (recommended for production)
-- **Testing**: Jest + Vitest
-- **Containerization**: Docker
+- Frontend: Vue.js 3 + TypeScript + Vite
+- Backend: Express.js + TypeScript
+- Database: MySQL (dev) → PostgreSQL (prod recommended)
+- Testing: Jest + Vitest
+- Containerization: Docker
 
 ## Consequences
-
-### Positive
-- Unified TypeScript across stack
-- Fast development with hot reload
-- Single deployment runtime
-- Large ecosystem support
-
-### Negative
-- JavaScript ecosystem complexity
-- Higher memory usage
-- Single point of failure
-
-### Risks
-- Performance limitations for CPU-intensive tasks
-- Vendor lock-in to Node.js ecosystem
+- **Pros**: Unified TypeScript, fast development, single runtime
+- **Cons**: Higher memory usage, JavaScript complexity
+- **Risks**: Performance limits for CPU-intensive tasks
 
 ## Alternatives Considered
-- **Go + Vue.js**: Better performance, steeper learning curve
-- **.NET + Vue.js**: Enterprise features, complex deployment
-- **Python/Django + React**: Rapid prototyping, GIL limitations
-- **Rails + React**: Fast development, performance constraints
+- Go + Vue.js (better performance, steeper learning)
+- .NET + Vue.js (enterprise features, complex deployment)
+- Python/Django + React (rapid prototyping, GIL limits)
+- Rails + React (fast dev, performance constraints)
 
-## Related Decisions
+## Related
 - ADR 002: AI-Assisted Development
-- ADR 003: MySQL for Database Service
+- ADR 003: Database Choice

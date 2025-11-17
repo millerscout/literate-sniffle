@@ -1,4 +1,4 @@
-# ADR 003: MySQL for Database Service
+# ADR 003: MySQL Database Choice
 
 ## Status
 Accepted
@@ -7,45 +7,32 @@ Accepted
 2025-11-16
 
 ## Context
-Need reliable database for CNAB transaction processing with ACID compliance and good performance. Chose MySQL for simplicity and familiarity.
+Need reliable database for CNAB transaction processing with ACID compliance.
 
 ## Decision
-**Database**: MySQL 8.0+ for all environments
-- **Production**: MySQL (AWS RDS, Google Cloud SQL, or self-hosted)
-- **Development**: MySQL via Docker
-- **Testing**: MySQL Memory Server for isolated testing
+Use MySQL 8.0+ for all environments:
+- Production: MySQL (AWS RDS, Google Cloud SQL, or self-hosted)
+- Development: MySQL via Docker
+- Testing: MySQL Memory Server
 
 ## Consequences
-
-### Positive
-- Familiar SQL syntax and ecosystem
-- Good performance for transactional workloads
-- Wide adoption and community support
-- Easy scaling with read replicas
-- Comprehensive tooling and management
-
-### Negative
-- Less advanced features than PostgreSQL
-- Some MySQL-specific limitations
-- Vendor considerations for enterprise use
-
-### Risks
-- Future scalability limitations
-- Migration complexity if switching to PostgreSQL later
+- **Pros**: Familiar SQL, good transactional performance, wide adoption
+- **Cons**: Fewer advanced features than PostgreSQL
+- **Risks**: Future scalability limits, migration complexity
 
 ## Alternatives Considered
-- **PostgreSQL**: Advanced features, better for complex queries, but steeper learning curve
-- **SQLite**: Simple development, insufficient for production concurrency
+- PostgreSQL (advanced features, steeper learning)
+- SQLite (simple dev, insufficient production concurrency)
 
 ## Implementation
 - Docker Compose for local development
-- Prisma ORM for type-safe database access
-- MySQL Memory Server for isolated testing
+- Prisma ORM for type-safe access
+- MySQL Memory Server for testing
 
 ## Future Considerations
-PostgreSQL could be evaluated for future production needs requiring advanced features like JSONB, advanced indexing, or complex analytical queries.
+Consider PostgreSQL for advanced features like JSONB or complex analytics.
 
-## Related Decisions
-- ADR 001: Node.js Full-Stack Development
-- ADR 004: Transaction Type Lookup Table</content>
+## Related
+- ADR 001: Node.js Full-Stack
+- ADR 004: Transaction Type Lookup</content>
 <parameter name="filePath">c:\projects\literate-sniffle\docs\adr\003-database-choice.md

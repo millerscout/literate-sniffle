@@ -202,6 +202,9 @@ export async function storeCNABData(
       const storeKey = `${transactionData.storeOwner}|${transactionData.storeName}`;
       const storeId = storeMap.get(storeKey)!;
       const typeId = typeIdMap.get(transactionData.typeCode)!;
+      
+      // Get transaction type info for description
+      const typeInfo = getTransactionTypeInfo(transactionData.typeCode);
 
       await tx.transaction.create({
         data: {
@@ -247,6 +250,7 @@ export async function getAllTransactions() {
     transactionType: transaction.transactionType.name,
     transactionCode: transaction.transactionType.code,
     nature: transaction.transactionType.nature,
+    description: transaction.transactionType.description,
     // Human readable date and time
     date: transaction.datetime.toISOString().split('T')[0], // YYYY-MM-DD
     formattedDate: transaction.datetime.toLocaleDateString('pt-BR'), // DD/MM/YYYY
@@ -290,6 +294,7 @@ export async function getTransactionsByStore(storeId: string) {
     transactionType: transaction.transactionType.name,
     transactionCode: transaction.transactionType.code,
     nature: transaction.transactionType.nature,
+    description: transaction.transactionType.description,
     // Human readable date and time
     date: transaction.datetime.toISOString().split('T')[0], // YYYY-MM-DD
     formattedDate: transaction.datetime.toLocaleDateString('pt-BR'), // DD/MM/YYYY

@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model TransactionType {
+  id          String   @id @default(cuid())
+  code        Int      @unique // CNAB type code (1, 2, 3, 4, 5, 6, 7, 8, 9)
+  name        String   // Descriptive name (Debit, Boleto, etc.)
+  nature       String   // Nature: Income/Expense
+  sign         String   // Sign: +/-/Unknown
+  description String?  // Optional detailed description
+  transactions Transaction[]
+}
+
+model FileUpload {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  size        Int
+  format      String
+  uploadedAt  DateTime @default(now())
+  transactions Transaction[]
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  ownerName   String
+  name        String
+  transactions Transaction[]
+
+  @@unique([ownerName, name])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  typeId      String   // Foreign key to TransactionType
+  date        DateTime // Transaction date
+  value       Float    // Transaction value
+  cpf         String   // Customer CPF
+  card        String   // Card number
+  time        String   // Transaction time (HHMMSS)
+  storeId     String
+  fileUploadId String
+
+  type        TransactionType @relation(fields: [typeId], references: [id])
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  fileUpload  FileUpload @relation(fields: [fileUploadId], references: [id], onDelete: Cascade)
+}

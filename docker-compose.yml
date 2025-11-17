@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: literate-sniffle-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: literate_sniffle
+      MYSQL_USER: sniffle_user
+      MYSQL_PASSWORD: sniffle_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: literate-sniffle-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: mysql://sniffle_user:sniffle_password@mysql:3306/literate_sniffle
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: sh -c "npx prisma db push --skip-generate && npm run dev"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: literate-sniffle-frontend
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://backend:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    command: npm run dev
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

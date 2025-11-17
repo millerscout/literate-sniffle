@@ -11,6 +11,11 @@ A full-stack TypeScript application for processing and visualizing custom CNAB (
 ```bash
 docker-compose up
 ```
+Access the application at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- API Documentation: http://localhost:3000/api-docs
+
 
 This will start:
 - **MySQL Database** on port 3306
@@ -58,10 +63,6 @@ npm install
 npm run dev
 ```
 
-Access the application at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
-- API Documentation: http://localhost:3000/api-docs
 
 ## Development Commands
 

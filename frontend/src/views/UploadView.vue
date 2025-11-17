@@ -72,7 +72,7 @@ const performUpload = async (file: File, resumeData?: any) => {
     const response = await fetch('/api/upload/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: file.name, totalChunks: chunks }),
+      body: JSON.stringify({ fileName: safeFileName, totalChunks: chunks }),
     });
 
     if (!response.ok) {

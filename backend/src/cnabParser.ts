@@ -83,9 +83,12 @@ export function parseCNABContent(content: string): ParsedCNABData {
   const lines = content.split('\n').filter(line => line.trim().length > 0);
   const transactions: ParsedTransaction[] = [];
 
-  for (const line of lines) {
+  for (let line of lines) {
+    // Remove line ending characters (LF, CRLF)
+    line = line.replace(/[\r\n]+$/, '');
+    
     if (line.length !== 80) {
-      throw new Error(`Invalid record length: ${line.length}. Expected 80 characters.`);
+      throw new Error(`Invalid record length: ${line.length}. Expected 80 characters for this CNAB format.`);
     }
 
     const type = parseInt(line.substring(0, 1));

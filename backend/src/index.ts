@@ -45,7 +45,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 function validateCNABFile(filePath: string): { isValid: boolean; format?: string; error?: string } {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
-    const lines = content.split('\n').filter(line => line.length > 0);
+    // Split lines and remove line ending characters (LF, CRLF)
+    const lines = content.split('\n')
+      .map(line => line.replace(/[\r\n]+$/, ''))
+      .filter(line => line.length > 0);
     
     if (lines.length === 0) {
       return { isValid: false, error: 'File is empty' };

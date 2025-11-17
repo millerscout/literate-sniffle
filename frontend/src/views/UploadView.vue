@@ -80,7 +80,8 @@ const performUpload = async (file: File, resumeData?: any) => {
         const errorData = await response.json();
         throw new Error(`CNAB validation failed: ${errorData.details || errorData.error}`);
       }
-      throw new Error(`Completion failed: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(`Upload failed: ${errorData.error || errorData.details || response.statusText}`);
     }
 
     const result = await response.json();
@@ -90,7 +91,9 @@ const performUpload = async (file: File, resumeData?: any) => {
     uploadStatus.value = `Upload completed successfully! Format: ${result.format || 'Unknown'}`;
   } catch (error) {
     console.error('Completion error:', error);
-    uploadStatus.value = 'Upload completed but finalization failed.';
+    const errorMessage = error instanceof Error ? error.message : 'Upload completed but finalization failed.';
+    uploadStatus.value = errorMessage;
+    throw error;
   }
 };
 
@@ -209,7 +212,11 @@ window.addEventListener('online', resumePendingUploads);
       <span class="progress-text">{{ uploadProgress }}%</span>
     </div>
 
-    <div v-if="uploadStatus" class="status">
+    <div v-if="uploadStatus" class="status" :class="{
+      'status-error': uploadStatus.includes('failed') || uploadStatus.includes('error') || uploadStatus.includes('CNAB validation') || uploadStatus.includes('finalization failed'),
+      'status-success': uploadStatus.includes('successfully'),
+      'status-info': uploadStatus.includes('Selected')
+    }">
       {{ uploadStatus }}
     </div>
   </div>
@@ -301,24 +308,24 @@ window.addEventListener('online', resumePendingUploads);
 
 .status {
   margin-top: 1rem;
-  padding: 0.5rem;
+  padding: 0.75rem 1rem;
   border-radius: 4px;
   font-weight: bold;
 }
 
-.status:contains("✅") {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.status:contains("❌") {
+.status-error {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
 
-.status:contains("Selected") {
+.status-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-info {
   background: #d1ecf1;
   color: #0c5460;
   border: 1px solid #bee5eb;

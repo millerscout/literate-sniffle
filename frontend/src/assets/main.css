@@ -11,6 +11,7 @@ body {
   margin: 0 auto;
   padding: 2rem;
   font-weight: normal;
+    width:450px
 }
 
 a,
@@ -36,5 +37,6 @@ a,
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 0 2rem;
+      width:450px
   }
 }

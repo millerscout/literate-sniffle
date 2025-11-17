@@ -15,8 +15,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Note: Prisma client will be generated at runtime to avoid network issues during build
 
 # Build the application
 RUN npm run build
@@ -42,6 +41,8 @@ RUN npm ci --only=production && npm cache clean --force
 COPY --from=development /app/dist ./dist
 COPY --from=development /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=development /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=development /app/prisma ./prisma
+COPY --from=development /app/prisma.config.ts ./prisma.config.ts
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -59,4 +60,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "npx prisma generate && node dist/index.js"]

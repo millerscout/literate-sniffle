@@ -3,20 +3,38 @@ import { prisma } from './db';
 /**
  * Maps CNAB transaction type codes to descriptive names and properties
  */
-function getTransactionTypeInfo(typeCode: number): { name: string; description: string; nature: string; sign: string } {
-  const typeMap: Record<number, { name: string; description: string; nature: string; sign: string }> = {
-    1: { name: 'Debit', description: 'Debit transaction', nature: 'Income', sign: '+' },
-    2: { name: 'Boleto', description: 'Boleto payment', nature: 'Expense', sign: '-' },
-    3: { name: 'Financing', description: 'Financing payment', nature: 'Expense', sign: '-' },
-    4: { name: 'Credit', description: 'Credit transaction', nature: 'Income', sign: '+' },
-    5: { name: 'Loan Receipt', description: 'Loan receipt', nature: 'Income', sign: '+' },
-    6: { name: 'Sales', description: 'Sales transaction', nature: 'Income', sign: '+' },
-    7: { name: 'TED Receipt', description: 'TED receipt', nature: 'Income', sign: '+' },
-    8: { name: 'DOC Receipt', description: 'DOC receipt', nature: 'Income', sign: '+' },
-    9: { name: 'Rent', description: 'Rent payment', nature: 'Expense', sign: '-' }
+function getTransactionTypeInfo(typeCode: number): { name: string; description: string; nature: string } {
+  const typeMap: Record<number, { name: string; description: string; nature: string }> = {
+    1: { name: 'Debit', description: 'Debit transaction', nature: 'Income' },
+    2: { name: 'Boleto', description: 'Boleto payment', nature: 'Expense' },
+    3: { name: 'Financing', description: 'Financing payment', nature: 'Expense' },
+    4: { name: 'Credit', description: 'Credit transaction', nature: 'Income' },
+    5: { name: 'Loan Receipt', description: 'Loan receipt', nature: 'Income' },
+    6: { name: 'Sales', description: 'Sales transaction', nature: 'Income' },
+    7: { name: 'TED Receipt', description: 'TED receipt', nature: 'Income' },
+    8: { name: 'DOC Receipt', description: 'DOC receipt', nature: 'Income' },
+    9: { name: 'Rent', description: 'Rent payment', nature: 'Expense' }
   };
 
-  return typeMap[typeCode] || { name: 'Unknown', description: 'Unknown transaction type', nature: 'Unknown', sign: '?' };
+  return typeMap[typeCode] || { name: 'Unknown', description: 'Unknown transaction type', nature: 'Unknown' };
+}
+
+/**
+ * Maps transaction type code to type name
+ */
+export function mapTypeCodeToName(typeCode: number): string {
+  switch (typeCode) {
+    case 1: return 'Debit';
+    case 2: return 'Boleto';
+    case 3: return 'Financing';
+    case 4: return 'Credit';
+    case 5: return 'Loan Receipt';
+    case 6: return 'Sales';
+    case 7: return 'TED Receipt';
+    case 8: return 'DOC Receipt';
+    case 9: return 'Rent';
+    default: throw new Error(`Invalid type code: ${typeCode}`);
+  }
 }
 
 /**
@@ -35,7 +53,6 @@ async function getOrCreateTransactionType(typeCode: number): Promise<string> {
         code: typeCode,
         name: typeInfo.name,
         nature: typeInfo.nature,
-        sign: typeInfo.sign,
         description: typeInfo.description
       }
     });
@@ -47,11 +64,10 @@ async function getOrCreateTransactionType(typeCode: number): Promise<string> {
 export interface ParsedTransaction {
   typeCode: number; // Keep original numeric code for processing
   typeId: string;   // Foreign key to TransactionType
-  date: Date;
+  datetime: Date;
   value: number;
   cpf: string;
   card: string;
-  time: string;
   storeOwner: string;
   storeName: string;
 }
@@ -85,15 +101,18 @@ export function parseCNABContent(content: string): ParsedCNABData {
     const valueStr = line.substring(9, 19); // 10 digits
     const cpf = line.substring(19, 30); // 11 digits
     const card = line.substring(30, 42); // 12 digits
-    const time = line.substring(42, 48); // HHMMSS
+    const timeStr = line.substring(42, 48); // HHMMSS
     const storeOwner = line.substring(48, 62).trim();
     const storeName = line.substring(62, 80).trim();
 
-    // Parse date
+    // Parse date and time
     const day = parseInt(dateStr.substring(0, 2));
     const month = parseInt(dateStr.substring(2, 4)) - 1; // JavaScript months are 0-based
     const year = parseInt(dateStr.substring(4, 8));
-    const date = new Date(year, month, day);
+    const hour = parseInt(timeStr.substring(0, 2));
+    const minute = parseInt(timeStr.substring(2, 4));
+    const second = parseInt(timeStr.substring(4, 6));
+    const datetime = new Date(year, month, day, hour, minute, second);
 
     // Parse value (last 2 digits are cents)
     const value = parseInt(valueStr) / 100;
@@ -101,11 +120,10 @@ export function parseCNABContent(content: string): ParsedCNABData {
     transactions.push({
       typeCode: type,
       typeId: '', // Will be set when storing
-      date,
+      datetime,
       value,
       cpf,
       card,
-      time,
       storeOwner,
       storeName
     });
@@ -188,11 +206,11 @@ export async function storeCNABData(
       await tx.transaction.create({
         data: {
           typeId,
-          date: transactionData.date,
+          type: mapTypeCodeToName(transactionData.typeCode),
+          datetime: transactionData.datetime,
           value: transactionData.value,
           cpf: transactionData.cpf,
           card: transactionData.card,
-          time: transactionData.time,
           storeId,
           fileUploadId: fileUpload.id
         }
@@ -213,12 +231,12 @@ export async function storeCNABData(
 export async function getAllTransactions() {
   const transactions = await prisma.transaction.findMany({
     include: {
-      type: true, // Include transaction type information
+      transactionType: true, // Include transaction type information
       store: true,
       fileUpload: true
     },
     orderBy: {
-      date: 'desc'
+      datetime: 'desc'
     }
   });
 
@@ -226,22 +244,20 @@ export async function getAllTransactions() {
   return transactions.map(transaction => ({
     id: transaction.id,
     // Human readable transaction type
-    transactionType: transaction.type.name,
-    transactionCode: transaction.type.code,
-    nature: transaction.type.nature,
-    sign: transaction.type.sign,
-    // Human readable date
-    date: transaction.date.toISOString().split('T')[0], // YYYY-MM-DD
-    formattedDate: transaction.date.toLocaleDateString('pt-BR'), // DD/MM/YYYY
+    transactionType: transaction.transactionType.name,
+    transactionCode: transaction.transactionType.code,
+    nature: transaction.transactionType.nature,
+    // Human readable date and time
+    date: transaction.datetime.toISOString().split('T')[0], // YYYY-MM-DD
+    formattedDate: transaction.datetime.toLocaleDateString('pt-BR'), // DD/MM/YYYY
+    time: transaction.datetime.toISOString().split('T')[1]?.substring(0, 8) || '00:00:00', // HH:MM:SS
+    formattedTime: transaction.datetime.toLocaleTimeString('pt-BR'), // HH:MM:SS
     // Human readable value
     value: Number(transaction.value),
     formattedValue: `R$ ${Number(transaction.value).toFixed(2)}`,
     // Other fields
     cpf: transaction.cpf,
     card: transaction.card,
-    // Human readable time
-    time: transaction.time, // HHMMSS
-    formattedTime: `${transaction.time.substring(0, 2)}:${transaction.time.substring(2, 4)}:${transaction.time.substring(4, 6)}`, // HH:MM:SS
     // Store info
     storeName: transaction.store.name,
     storeOwner: transaction.store.ownerName,
@@ -258,12 +274,12 @@ export async function getTransactionsByStore(storeId: string) {
   const transactions = await prisma.transaction.findMany({
     where: { storeId },
     include: {
-      type: true, // Include transaction type information
+      transactionType: true, // Include transaction type information
       store: true,
       fileUpload: true
     },
     orderBy: {
-      date: 'desc'
+      datetime: 'desc'
     }
   });
 
@@ -271,22 +287,20 @@ export async function getTransactionsByStore(storeId: string) {
   return transactions.map(transaction => ({
     id: transaction.id,
     // Human readable transaction type
-    transactionType: transaction.type.name,
-    transactionCode: transaction.type.code,
-    nature: transaction.type.nature,
-    sign: transaction.type.sign,
-    // Human readable date
-    date: transaction.date.toISOString().split('T')[0], // YYYY-MM-DD
-    formattedDate: transaction.date.toLocaleDateString('pt-BR'), // DD/MM/YYYY
+    transactionType: transaction.transactionType.name,
+    transactionCode: transaction.transactionType.code,
+    nature: transaction.transactionType.nature,
+    // Human readable date and time
+    date: transaction.datetime.toISOString().split('T')[0], // YYYY-MM-DD
+    formattedDate: transaction.datetime.toLocaleDateString('pt-BR'), // DD/MM/YYYY
+    time: transaction.datetime.toISOString().split('T')[1]?.substring(0, 8) || '00:00:00', // HH:MM:SS
+    formattedTime: transaction.datetime.toLocaleTimeString('pt-BR'), // HH:MM:SS
     // Human readable value
     value: Number(transaction.value),
     formattedValue: `R$ ${Number(transaction.value).toFixed(2)}`,
     // Other fields
     cpf: transaction.cpf,
     card: transaction.card,
-    // Human readable time
-    time: transaction.time, // HHMMSS
-    formattedTime: `${transaction.time.substring(0, 2)}:${transaction.time.substring(2, 4)}:${transaction.time.substring(4, 6)}`, // HH:MM:SS
     // Store info
     storeName: transaction.store.name,
     storeOwner: transaction.store.ownerName,
@@ -304,7 +318,7 @@ export async function getStoreSummary() {
     include: {
       transactions: {
         include: {
-          type: true
+          transactionType: true
         }
       },
       _count: {
@@ -320,8 +334,8 @@ export async function getStoreSummary() {
     transactionCount: store._count.transactions,
     totalValue: store.transactions.reduce((sum: number, t: any) => {
       const value = Number(t.value);
-      const sign = t.type.sign;
-      return sign === '+' ? sum + value : sum - value;
+      const nature = t.transactionType.nature;
+      return nature === 'Income' ? sum + value : sum - value;
     }, 0)
   }));
 }

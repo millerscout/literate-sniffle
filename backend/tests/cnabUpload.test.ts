@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import app from '../src/index';
 import { prisma } from '../src/db';
+import { mapTypeCodeToName } from '../src/cnabParser';
 
 describe('CNAB Upload and Database Storage', () => {
 
@@ -33,11 +34,11 @@ describe('CNAB Upload and Database Storage', () => {
       // Verify transactions have correct structure
       const transaction = fileUpload?.transactions[0];
       expect(transaction).toHaveProperty('typeId');
-      expect(transaction).toHaveProperty('date');
+      expect(transaction).toHaveProperty('type');
+      expect(transaction).toHaveProperty('datetime');
       expect(transaction).toHaveProperty('value');
       expect(transaction).toHaveProperty('cpf');
       expect(transaction).toHaveProperty('card');
-      expect(transaction).toHaveProperty('time');
       expect(transaction).toHaveProperty('storeId');
       expect(transaction).toHaveProperty('fileUploadId');
     });
@@ -191,5 +192,80 @@ describe('CNAB Upload and Database Storage', () => {
       expect(typeof store.transactionCount).toBe('number');
       expect(typeof store.totalValue).toBe('number');
     });
+  });
+});
+
+describe('Transaction Type Validation', () => {
+  describe('mapTypeCodeToName', () => {
+    it('should throw error for invalid type code', () => {
+      expect(() => mapTypeCodeToName(99)).toThrow('Invalid type code: 99');
+      expect(() => mapTypeCodeToName(0)).toThrow('Invalid type code: 0');
+      expect(() => mapTypeCodeToName(10)).toThrow('Invalid type code: 10');
+    });
+
+    it('should return correct names for valid type codes', () => {
+      expect(mapTypeCodeToName(1)).toBe('Debit');
+      expect(mapTypeCodeToName(2)).toBe('Boleto');
+      expect(mapTypeCodeToName(3)).toBe('Financing');
+      expect(mapTypeCodeToName(4)).toBe('Credit');
+      expect(mapTypeCodeToName(5)).toBe('Loan Receipt');
+      expect(mapTypeCodeToName(6)).toBe('Sales');
+      expect(mapTypeCodeToName(7)).toBe('TED Receipt');
+      expect(mapTypeCodeToName(8)).toBe('DOC Receipt');
+      expect(mapTypeCodeToName(9)).toBe('Rent');
+    });
+  });
+});
+
+describe('Balance Calculation', () => {
+  it('should calculate store balances correctly based on transaction nature', async () => {
+    // Create test data with known transaction types
+    const testFilePath = path.join(__dirname, '../sample.txt');
+    const response = await request(app)
+      .post('/api/upload')
+      .attach('file', testFilePath)
+      .expect(200);
+
+    // Get store summary to check balances
+    const summaryResponse = await request(app)
+      .get('/api/stores/summary')
+      .expect(200);
+
+    expect(Array.isArray(summaryResponse.body.stores)).toBe(true);
+    expect(summaryResponse.body.stores.length).toBeGreaterThan(0);
+
+    // Verify that balances are calculated correctly
+    // Income transactions should add to balance, Expense transactions should subtract
+    for (const store of summaryResponse.body.stores) {
+      expect(typeof store.totalValue).toBe('number');
+      expect(store.totalValue).not.toBeNaN();
+
+      // The balance should be reasonable (not extremely large or negative)
+      // This is a basic sanity check since we can't predict exact values without parsing the sample file
+      expect(Math.abs(store.totalValue)).toBeLessThan(100000); // Reasonable upper bound
+    }
+
+    // Test with a specific store to verify calculation logic
+    const stores = await prisma.store.findMany({ take: 1 });
+    if (stores.length > 0) {
+      const storeId = stores[0].id;
+      const transactions = await prisma.transaction.findMany({
+        where: { storeId },
+        include: { transactionType: true }
+      });
+
+      // Manually calculate expected balance
+      let expectedBalance = 0;
+      for (const transaction of transactions) {
+        const value = Number(transaction.value);
+        const nature = transaction.transactionType.nature;
+        expectedBalance += nature === 'Income' ? value : -value;
+      }
+
+      // Get balance from API
+      const storeSummary = summaryResponse.body.stores.find((s: any) => s.id === storeId);
+      expect(storeSummary).toBeDefined();
+      expect(storeSummary.totalValue).toBe(expectedBalance);
+    }
   });
 });

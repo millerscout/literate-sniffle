@@ -25,12 +25,13 @@ const title = ref('Literate Sniffle')
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  width:450px
+  width: 450px
 }
 </style>
 
 <style scoped>
 .content {
+  min-width: 800px;
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

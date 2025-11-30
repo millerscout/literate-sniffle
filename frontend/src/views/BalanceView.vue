@@ -2,11 +2,13 @@
 import { ref, onMounted } from 'vue'
 
 interface StoreSummary {
-  id: string
+  storeId: string
   ownerName: string
-  name: string
+  storeName: string
   transactionCount: number
-  totalValue: number
+  totalIncome: number
+  totalExpense: number
+  balance: number
 }
 
 interface TransactionDetail {
@@ -66,7 +68,33 @@ const fetchTransactionDetails = async (storeId: string) => {
     }
 
     const data = await response.json()
-    transactionDetails.value = data.transactions || []
+    const transactions = data.transactions || []
+    
+    // Map API response to expected format
+    transactionDetails.value = transactions.map((t: any) => {
+      const datetime = new Date(t.datetime)
+      const nature = t.transactionType?.nature || 'Unknown'
+      const sign = nature === 'Income' ? '+' : nature === 'Expense' ? '-' : ''
+      
+      return {
+        id: t.id,
+        transactionType: t.transactionType?.name || t.type || 'Unknown',
+        transactionCode: t.transactionType?.code || 0,
+        nature,
+        sign,
+        date: datetime.toISOString().split('T')[0],
+        formattedDate: datetime.toLocaleDateString('pt-BR'),
+        value: Math.abs(t.value || 0),
+        formattedValue: formatCurrency(Math.abs(t.value || 0)),
+        cpf: t.cpf || 'N/A',
+        card: t.card || 'N/A',
+        time: datetime.toTimeString().split(' ')[0],
+        formattedTime: datetime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        storeName: t.store?.name || '',
+        storeOwner: t.store?.ownerName || '',
+        storeId: t.storeId
+      }
+    })
   } catch (err) {
     console.error('Error fetching transaction details:', err)
     transactionDetails.value = []
@@ -146,22 +174,22 @@ onMounted(() => {
         <tbody>
           <tr
             v-for="store in stores"
-            :key="store.id"
-            :class="{ 'selected-row': selectedStoreId === store.id }"
+            :key="store.storeId"
+            :class="{ 'selected-row': selectedStoreId === store.storeId }"
           >
             <td>{{ store.ownerName }}</td>
-            <td>{{ store.name }}</td>
+            <td>{{ store.storeName }}</td>
             <td class="transaction-count">{{ store.transactionCount }}</td>
-            <td :class="['balance-amount', { positive: store.totalValue > 0, negative: store.totalValue < 0 }]">
-              {{ formatCurrency(store.totalValue) }}
+            <td :class="['balance-amount', { positive: store.balance > 0, negative: store.balance < 0 }]">
+              {{ formatCurrency(store.balance) }}
             </td>
             <td>
               <button
-                @click="toggleStoreDetails(store.id)"
+                @click="toggleStoreDetails(store.storeId)"
                 class="details-btn"
-                :disabled="isLoadingDetails && selectedStoreId === store.id"
+                :disabled="isLoadingDetails && selectedStoreId === store.storeId"
               >
-                {{ selectedStoreId === store.id ? 'Hide Details' : 'Show Details' }}
+                {{ selectedStoreId === store.storeId ? 'Hide Details' : 'Show Details' }}
               </button>
             </td>
           </tr>

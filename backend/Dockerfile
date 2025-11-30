@@ -1,63 +1,39 @@
-# Development stage
-FROM node:18-alpine AS development
+# Use SDK image for build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
-WORKDIR /app
+# Copy project files
+COPY ["src/LiterateSniffle.API/LiterateSniffle.API.csproj", "LiterateSniffle.API/"]
+COPY ["src/LiterateSniffle.Core/LiterateSniffle.Core.csproj", "LiterateSniffle.Core/"]
+COPY ["src/LiterateSniffle.Infrastructure/LiterateSniffle.Infrastructure.csproj", "LiterateSniffle.Infrastructure/"]
 
-# Install OpenSSL for Prisma compatibility
-RUN apk add --no-cache openssl
+# Restore dependencies
+RUN dotnet restore "LiterateSniffle.API/LiterateSniffle.API.csproj"
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Note: Prisma client will be generated at runtime to avoid network issues during build
+# Copy all source files
+COPY src/ .
 
 # Build the application
-RUN npm run build
+WORKDIR "/src/LiterateSniffle.API"
+RUN dotnet build "LiterateSniffle.API.csproj" -c Release -o /app/build
 
-# Expose port
-EXPOSE 3000
+# Publish the application
+FROM build AS publish
+RUN dotnet publish "LiterateSniffle.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Production stage
-FROM node:18-alpine AS production
-
+# Use runtime image for final stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-
-# Install OpenSSL for Prisma compatibility
-RUN apk add --no-cache openssl
-
-# Copy package files
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy built application from development stage
-COPY --from=development /app/dist ./dist
-COPY --from=development /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=development /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=development /app/prisma ./prisma
-COPY --from=development /app/prisma.config.ts ./prisma.config.ts
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Change ownership of app directory
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+# Copy published files
+COPY --from=publish /app/publish .
 
-# Start the application
-CMD ["sh", "-c", "npx prisma generate && node dist/index.js"]
+# Create uploads directory
+RUN mkdir -p uploads/temp
+
+# Set environment variables
+ENV ASPNETCORE_URLS=http://+:3000
+ENV ASPNETCORE_ENVIRONMENT=Development
+
+ENTRYPOINT ["dotnet", "LiterateSniffle.API.dll"]

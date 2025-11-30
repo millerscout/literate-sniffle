@@ -1,6 +1,15 @@
 # Literate Sniffle
 
-A full-stack TypeScript application for processing and visualizing custom CNAB (Brazilian banking transaction) files, featuring a Vue.js frontend and Express backend.
+A full-stack application for processing and visualizing custom CNAB (Brazilian banking transaction) files, featuring a Vue.js frontend with TypeScript and a .NET 8 backend.
+
+## Tech Stack
+
+- **Frontend**: Vue.js 3 + TypeScript + Vite
+- **Backend**: .NET 8 + ASP.NET Core + Entity Framework Core + Clean Architecture
+- **Database**: MySQL 8.0
+- **Testing**: xUnit + FluentAssertions (backend), Vitest (frontend)
+- **Containerization**: Docker & Docker Compose
+- **API Documentation**: Swagger/OpenAPI
 
 **Recommended Setup**: Use Docker Compose for the simplest installation and testing experience.
 
@@ -9,46 +18,43 @@ A full-stack TypeScript application for processing and visualizing custom CNAB (
 ### Using Docker Compose (Recommended)
 
 ```bash
-docker-compose up
+docker compose up
 ```
+
 Access the application at:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3000
-- API Documentation: http://localhost:3000/api-docs
+- API Documentation: http://localhost:3000/swagger
 
-
-This will start:
+The setup starts:
 - **MySQL Database** on port 3306
-- **Backend API** on port 3000
-- **Frontend** on port 5173
+- **Backend API (.NET)** on port 3000
+- **Frontend (Vue.js)** on port 5173
 
-The database schema will be automatically created and migrations applied.
+The database schema will be automatically created on first startup.
 
-To test the application, upload the sample CNAB file located at `backend/uploads/CNAB.txt` or download from [this GitHub link](https://github.com/ByCodersTec/desafio-ruby-on-rails/blob/master/CNAB.txt).
+To test the application, upload the sample CNAB file: `CNAB.txt`
 
 ### Manual Setup (Local Development)
 
 #### Prerequisites
-- Node.js 18+
-- MySQL 8.0+
+- **.NET 8 SDK**
+- **Node.js 18+** (for frontend)
+- **MySQL 8.0+**
 
 #### Backend Setup
 
 ```bash
 cd backend
 
-# Install dependencies
-npm install
+# Restore dependencies
+dotnet restore
 
-# Configure database
-# Copy .env.example to .env and update DATABASE_URL if needed
-cp .env.example .env
+# Start MySQL (if using Docker)
+docker compose up -d mysql
 
-# Create database and run migrations
-npx prisma db push
-
-# Start backend
-npm run dev
+# Start backend (uses .env file for configuration)
+dotnet run --project src/LiterateSniffle.API
 ```
 
 #### Frontend Setup
@@ -66,14 +72,14 @@ npm run dev
 
 ## Development Commands
 
+**.NET Backend:**
 ```bash
 # Backend
 cd backend
-npm run dev          # Start development server with hot-reload
-npm test             # Run tests
-npm run test:coverage # Generate coverage report
-npm run build        # Build for production
-npx prisma db push   # Apply database migrations
+dotnet build         # Build solution
+dotnet run --project src/LiterateSniffle.API  # Run API
+dotnet test          # Run all tests
+dotnet test /p:CollectCoverage=true  # Run tests with coverage
 
 # Frontend
 cd frontend
@@ -83,30 +89,18 @@ npm run test:ui      # Run tests with UI
 npm run test:coverage # Generate coverage report
 ```
 
-## Database Configuration
+## Environment Configuration
 
-### Development
-
-The application uses MySQL for all environments. Connection string is configured via `.env`:
+The backend uses a `.env` file in the project root for configuration:
 
 ```env
-DATABASE_URL=mysql://sniffle_user:sniffle_password@localhost:3306/literate_sniffle
-```
+# Backend Configuration (.NET)
+ASPNETCORE_URLS=http://localhost:3000
+ASPNETCORE_ENVIRONMENT=Development
+ConnectionStrings__DefaultConnection=Server=localhost;Port=3306;Database=literate_sniffle;User=sniffle_user;Password=sniffle_password;
 
-### Testing
-
-Tests use a separate MySQL database configured as:
-
-```env
-TEST_DATABASE_URL=mysql://sniffle_user:sniffle_password@localhost:3306/literate_sniffle_test
-```
-
-### Production
-
-Update the `DATABASE_URL` environment variable in your production deployment:
-
-```
-mysql://[user]:[password]@[host]:[port]/[database]
+# Frontend Configuration
+VITE_API_URL=http://localhost:3000
 ```
 
 ## Docker Compose Services
@@ -121,59 +115,65 @@ mysql://[user]:[password]@[host]:[port]/[database]
 - **Volume**: `mysql_data` (persistent storage)
 - **Health Check**: Enabled
 
-### Backend Service
+### Backend Service (.NET 8)
 - **Port**: 3000
 - **Database**: Connected to MySQL
-- **Hot-reload**: Enabled via volume mount
 - **Depends on**: MySQL service with health check
+- **Architecture**: Clean Architecture (API → Core → Infrastructure)
 
-### Frontend Service
-- **Port**: 5173
-- **Dev Server**: Vite with hot-reload
-- **API URL**: Points to backend on port 3000
+### Frontend Service (Vue.js)
+- **Port**: 5173 (maps to nginx port 80 in container)
+- **Production Build**: nginx:alpine serving static files
+- **API Proxy**: Forwards `/api/*` to backend
 
 ## Project Structure
 
 ```
 literate-sniffle/
-├── backend/
+├── backend/                               # .NET 8 Backend
 │   ├── src/
-│   │   ├── index.ts           # Express server & API routes
-│   │   ├── cnabParser.ts      # CNAB file parsing logic
-│   │   └── db.ts              # Prisma client
+│   │   ├── LiterateSniffle.API/           # Web API Layer
+│   │   │   ├── Controllers/               # API Controllers
+│   │   │   ├── Middleware/                # Custom middleware
+│   │   │   ├── Program.cs                 # Entry point
+│   │   │   └── appsettings.json           # Configuration
+│   │   ├── LiterateSniffle.Core/          # Business Logic
+│   │   │   ├── Services/                  # Business services
+│   │   │   ├── Exceptions/                # Custom exceptions
+│   │   │   └── Models/                    # DTOs
+│   │   └── LiterateSniffle.Infrastructure/ # Data Access
+│   │       ├── Data/                      # DbContext & configurations
+│   │       ├── Entities/                  # EF Core entities
+│   │       └── Repositories/              # Repository pattern (if used)
 │   ├── tests/
-│   │   ├── cnabUpload.test.ts # API & storage tests
-│   │   ├── userRoutes.test.ts # User endpoints tests
-│   │   └── setup.ts           # Test environment setup
-│   ├── prisma/
-│   │   ├── schema.prisma      # Database schema
-│   │   └── migrations/        # Migration files
-│   ├── Dockerfile             # Multi-stage build
-│   ├── package.json           # Dependencies
-│   ├── tsconfig.json          # TypeScript config
-│   ├── jest.config.js         # Test config
-│   ├── .env.example           # Environment template
-│   └── .env                   # Local environment
+│   │   ├── LiterateSniffle.API.Tests/     # Integration tests
+│   │   └── LiterateSniffle.Core.Tests/    # Unit tests
+│   ├── uploads/                           # File upload storage
+│   ├── Dockerfile                         # Multi-stage build
+│   ├── LiterateSniffle.sln                # Solution file
+│   └── README.md                          # Backend documentation
 ├── frontend/
 │   ├── src/
-│   │   ├── App.vue            # Main component
-│   │   ├── main.ts            # Entry point
-│   │   └── components/        # Vue components
-│   ├── Dockerfile             # Multi-stage build
-│   ├── package.json           # Dependencies
-│   └── tsconfig.json          # TypeScript config
-├── docker-compose.yml         # Service orchestration
-└── README.md                  # This file
+│   │   ├── App.vue                        # Main component
+│   │   ├── main.ts                        # Entry point
+│   │   ├── router.ts                      # Vue Router
+│   │   └── views/                         # Page components
+│   ├── Dockerfile                         # Multi-stage build
+│   ├── nginx.conf                         # Production nginx config
+│   ├── package.json                       # Dependencies
+│   └── tsconfig.json                      # TypeScript config
+├── docs/
+│   └── adr/                               # Architecture Decision Records
+│       ├── 001-nodejs-fullstack.md        # Original stack (deprecated backend)
+│       ├── 002-ai-assisted-development.md
+│       ├── 003-database-choice.md
+│       ├── 004-transaction-description-storage.md
+│       └── 005-dotnet-migration-clean-architecture.md
+├── docker-compose.yml                     # Docker Compose configuration
+├── .env                                   # Environment variables
+├── .env.example                           # Environment template
+└── README.md                              # This file
 ```
-
-## Tech Stack
-
-- **Frontend**: Vue.js 3 + TypeScript + Vite
-- **Backend**: Express + TypeScript
-- **Database**: MySQL 8.0 with Prisma ORM
-- **Testing**: Jest (backend), Vitest (frontend)
-- **Containerization**: Docker & Docker Compose
-- **API Documentation**: Swagger/OpenAPI
 
 ## Documentation
 
@@ -199,16 +199,15 @@ All foreign keys have cascading deletes for referential integrity.
 
 ## API Endpoints
 
-All endpoints are documented at: `http://localhost:3000/api-docs`
+All endpoints are documented at: `http://localhost:3000/swagger`
 
 ### File Upload
-- `POST /api/upload` - Upload and process CNAB file
-- `POST /api/upload/chunk` - Upload file chunk (chunked upload part 1)
-- `POST /api/upload/complete` - Complete chunked upload (part 2)
+- `POST /api/upload/chunk` - Upload file chunk (chunked upload)
+- `POST /api/upload/complete` - Complete chunked upload and process CNAB file
 
 ### Transactions
 - `GET /api/transactions` - Get all transactions
-- `GET /api/transactions/store/:storeId` - Get transactions for a store
+- `GET /api/transactions/store/{storeId}` - Get transactions for a specific store
 
 ### Stores
 - `GET /api/stores/summary` - Get all stores with transaction summaries and balances
@@ -219,35 +218,54 @@ All endpoints are documented at: `http://localhost:3000/api-docs`
 ## Running Tests
 
 ```bash
-# Backend - Run all tests
-cd backend && npm test
+# Backend (.NET) - Run all tests
+cd backend
+dotnet test
 
 # Backend - Run with coverage report
-cd backend && npm run test:coverage
-
-# Backend - Run in watch mode
-cd backend && npm run test:watch
+dotnet test /p:CollectCoverage=true
 
 # Frontend - Run all tests
-cd frontend && npm test
+cd frontend
+npm test
 
 # Frontend - Run with UI
-cd frontend && npm run test:ui
+npm run test:ui
 
 # Frontend - Coverage report
-cd frontend && npm run test:coverage
+npm run test:coverage
 ```
 
-## Disclaimer
+## Architecture
+
+The backend follows Clean Architecture principles with clear separation of concerns:
+
+- **API Layer** (`LiterateSniffle.API`): Controllers, middleware, configuration
+- **Core Layer** (`LiterateSniffle.Core`): Business logic, services, domain models
+- **Infrastructure Layer** (`LiterateSniffle.Infrastructure`): Data access, EF Core, repositories
+
+See [docs/adr/005-dotnet-migration-clean-architecture.md](docs/adr/005-dotnet-migration-clean-architecture.md) for detailed rationale.
+
+## Design Considerations
 
 This implementation has several known limitations and areas for improvement:
 
-- **File Handling**: Using API endpoints to handle large CNAB files is not ideal. Huge files may cause performance issues or timeouts.
-- **CNAB Verification**: Verification for atomic changes in CNAB processing was not implemented.
-- **Technology Choice**: Node.js was chosen for fast prototyping but is not optimal for memory management in large-scale processing. Consider using a language with better memory efficiency.
-- **Processing Strategy**: Current processing handles files in memory, which is problematic for huge files. Implement chunked and atomic processing using cronjobs or file watchers for better scalability.
+- **File Handling**: Current implementation processes files in memory. For very large CNAB files (>100MB), consider implementing:
+  - Stream processing for lower memory footprint
+  - Background job processing with queue systems
+  - File chunking with progress tracking
+  
+- **CNAB Verification**: Atomic transaction verification for CNAB processing batches was not implemented.
 
-These are design considerations and not implemented fixes.
+- **Technology Migration**: The original Node.js backend was replaced with .NET 8 to address:
+  - **Memory Management**: Better handling of large file processing
+  - **Performance**: Compiled code with optimized runtime
+  - **Scalability**: Cloud-native architecture ready for serverless deployment
+  - **Type Safety**: Strong typing throughout the stack
+
+See [docs/adr/](docs/adr/) for detailed architectural decisions, including:
+- ADR 001: Original Node.js stack (backend portion deprecated)
+- ADR 005: .NET migration with Clean Architecture (current implementation)
 
 ## License
 

@@ -50,10 +50,11 @@ Each ADR follows this structure:
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [001](001-nodejs-fullstack.md) | Node.js Full-Stack Development | Accepted | 2025-11-16 |
+| [001](001-nodejs-fullstack.md) | Node.js Full-Stack Development | Accepted (Backend Superseded by 005) | 2025-11-16 |
 | [002](002-ai-assisted-development.md) | AI-Assisted Development | Accepted | 2025-11-16 |
 | [003](003-database-choice.md) | MySQL Database Choice | Accepted | 2025-11-16 |
 | [004](004-transaction-description-storage.md) | Transaction Description Storage | Accepted | 2025-11-16 |
+| [005](005-dotnet-migration-clean-architecture.md) | .NET Migration with Clean Architecture | Accepted | 2025-11-30 |
 
 ## How to Create a New ADR
 

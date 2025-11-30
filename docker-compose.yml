@@ -13,58 +13,48 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      timeout: 5s
+      retries: 10
+      interval: 5s
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development
     container_name: literate-sniffle-backend
-    environment:
-      NODE_ENV: development
-      PORT: 3000
-      DATABASE_URL: mysql://sniffle_user:sniffle_password@mysql:3306/literate_sniffle
     ports:
       - "3000:3000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    networks:
-      - app-network
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=literate_sniffle;User=sniffle_user;Password=sniffle_password;
     depends_on:
       mysql:
         condition: service_healthy
-    command: sh -c "npx prisma db push --skip-generate && npm run dev"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - app-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: literate-sniffle-frontend
-    environment:
-      NODE_ENV: development
-      VITE_API_URL: http://backend:3000
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    networks:
-      - app-network
+      - "5173:80"
     depends_on:
       - backend
-    command: npm run dev
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
 
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  mysql_data:

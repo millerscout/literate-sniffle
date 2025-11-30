@@ -33,6 +33,7 @@ const performUpload = async (file: File, resumeData?: any) => {
 
     const formData = new FormData();
     formData.append('chunk', chunk);
+    formData.append('uploadId', fileId);
     formData.append('chunkIndex', i.toString());
     formData.append('totalChunks', chunks.toString());
     formData.append('fileName', safeFileName);
@@ -69,10 +70,14 @@ const performUpload = async (file: File, resumeData?: any) => {
 
   // Complete the upload
   try {
+    const completeFormData = new FormData();
+    completeFormData.append('uploadId', fileId);
+    completeFormData.append('filename', safeFileName);
+    completeFormData.append('totalChunks', chunks.toString());
+    
     const response = await fetch('/api/upload/complete', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: safeFileName, totalChunks: chunks }),
+      body: completeFormData,
     });
 
     if (!response.ok) {
